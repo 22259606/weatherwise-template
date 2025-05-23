@@ -1,0 +1,320 @@
+Weather Data Functions
+Tool - ChatGPT
+Date - 23 MAY
+  import requests
+
+def get_weather_forecast_perth(forecast_days=3):
+    """
+    Get weather forecast for Perth, Australia for the given number of days.
+
+    Args:
+        forecast_days (int): Number of days of forecast (1 to 5)
+
+    Returns:
+        None (prints forecast to console)
+    """
+    API_KEY = "e518a1d26d504abbb7650159251905"  # Replace with your valid WeatherAPI key
+    BASE_URL = "http://api.weatherapi.com/v1/forecast.json"
+    LOCATION = "Perth"
+
+    if not (1 <= forecast_days <= 5):
+        print("Error: forecast_days must be between 1 and 5.")
+        return
+
+    params = {
+        "key": API_KEY,
+        "q": LOCATION,
+        "days": forecast_days,
+        "aqi": "no",
+        "alerts": "no"
+    }
+
+    try:
+        response = requests.get(BASE_URL, params=params)
+        response.raise_for_status()
+        data = response.json()
+
+        print(f"\nWeather Forecast for {data['location']['name']}, {data['location']['country']}")
+        print("------------------------------------------------------")
+        for day in data["forecast"]["forecastday"]:
+            date = day["date"]
+            condition = day["day"]["condition"]["text"]
+            avg_temp = day["day"]["avgtemp_c"]
+            max_temp = day["day"]["maxtemp_c"]
+            min_temp = day["day"]["mintemp_c"]
+            print(f"{date}: {condition}")
+            print(f"  Avg Temp: {avg_temp}°C | Max: {max_temp}°C | Min: {min_temp}°C\n")
+
+    except requests.HTTPError as http_err:
+        print("HTTP error occurred:", http_err)
+        print("Response details:", response.text)
+    except Exception as err:
+        print("Other error occurred:", err)
+
+# Example usage
+get_weather_forecast_perth(3) ( Is there any other way we can change it) 
+
+ChatGPT said:
+Your script to get the weather forecast for Perth is well-structured and functional. However, there are several ways you can enhance or modify it depending on your goals—whether it's improving readability, adding features, handling errors better, or making it more modular and reusable.
+
+Here are some ideas with brief explanations and example code changes:
+
+🔁 1. Return Data Instead of Just Printing
+Returning the forecast data gives more flexibility (e.g., for use in a web app or storing in a file).
+
+Change:
+
+python
+Copy
+Edit
+def get_weather_forecast_perth(forecast_days=3):
+    ...
+    try:
+        ...
+        forecast_summary = {
+            "location": f"{data['location']['name']}, {data['location']['country']}",
+            "days": []
+        }
+        for day in data["forecast"]["forecastday"]:
+            forecast_summary["days"].append({
+                "date": day["date"],
+                "condition": day["day"]["condition"]["text"],
+                "avg_temp": day["day"]["avgtemp_c"],
+                "max_temp": day["day"]["maxtemp_c"],
+                "min_temp": day["day"]["mintemp_c"],
+            })
+        return forecast_summary
+    except ...
+Then use it like:
+
+python
+Copy
+Edit
+forecast = get_weather_forecast_perth(3)
+for day in forecast["days"]:
+    print(day)
+🧼 2. Separate Printing from Logic
+This makes it easier to test and reuse the logic.
+
+Add:
+
+python
+Copy
+Edit
+def print_forecast(forecast):
+    print(f"\nWeather Forecast for {forecast['location']}")
+    print("------------------------------------------------------")
+    for day in forecast["days"]:
+        print(f"{day['date']}: {day['condition']}")
+        print(f"  Avg Temp: {day['avg_temp']}°C | Max: {day['max_temp']}°C | Min: {day['min_temp']}°C\n")
+Then:
+
+python
+Copy
+Edit
+forecast = get_weather_forecast_perth(3)
+if forecast:
+    print_forecast(forecast)
+🧪 3. Better Input Validation
+Use exception handling instead of a print/return approach.
+
+Change:
+
+python
+Copy
+Edit
+if not isinstance(forecast_days, int) or not (1 <= forecast_days <= 5):
+    raise ValueError("forecast_days must be an integer between 1 and 5.")
+🌐 4. Parameterize the City or Use CLI Args
+Make it reusable for other locations.
+
+python
+Copy
+Edit
+def get_weather_forecast(location="Perth", forecast_days=3):
+🧰 5. Use Logging Instead of print
+This helps in production environments.
+
+python
+Copy
+Edit
+import logging
+logging.basicConfig(level=logging.INFO)
+...
+logging.info("Fetching weather for %s", LOCATION)
+⏳ 6. Timeouts and Retry Logic
+Prevent hanging requests.
+
+python
+Copy
+Edit
+response = requests.get(BASE_URL, params=params, timeout=10)
+For retry logic, use requests.adapters or a library like tenacity.
+
+✅ Summary of Improvements
+Category	Enhancement
+Flexibility	Return data, separate logic/print
+Reusability	Accept dynamic location
+Robustness	Better validation, error handling
+Production-Ready	Logging, timeouts, retries
+
+Would you like me to refactor the full code with some of these enhancements?
+
+
+
+You said:
+I think we can get it more easily.
+
+ChatGPT said:
+You're absolutely right — if your goal is simplicity and ease of use, you can streamline the script significantly. Here’s a simplified version that does the same thing with less code and better readability:
+
+✅ Simplified Version:
+python
+Copy
+Edit
+import requests
+
+def get_weather_forecast(city="Perth", days=3):
+    if not (1 <= days <= 5):
+        print("Please choose forecast days between 1 and 5.")
+        return
+
+    url = "http://api.weatherapi.com/v1/forecast.json"
+    params = {
+        "key": "e518a1d26d504abbb7650159251905",  # Use your own API key
+        "q": city,
+        "days": days,
+        "aqi": "no",
+        "alerts": "no"
+    }
+
+    try:
+        r = requests.get(url, params=params, timeout=10)
+        r.raise_for_status()
+        data = r.json()
+
+        location = f"{data['location']['name']}, {data['location']['country']}"
+        print(f"\nWeather Forecast for {location}")
+        print("-" * 50)
+
+        for day in data["forecast"]["forecastday"]:
+            print(f"{day['date']}: {day['day']['condition']['text']}")
+            print(f"  Avg: {day['day']['avgtemp_c']}°C | Max: {day['day']['maxtemp_c']}°C | Min: {day['day']['mintemp_c']}°C\n")
+
+    except requests.RequestException as e:
+        print("Failed to fetch weather data:", e)
+
+# Example
+get_weather_forecast("Perth", 3)
+🔍 What’s Simplified?
+Feature	Original	Simplified
+Separate params	✅	✅
+Error handling	More verbose	Cleaner with RequestException
+Readability	Medium	High
+Flexibility	Hardcoded city	City is a parameter
+Function size	Medium	Short and simple
+
+Would you like to make this script runnable from the command line or save the output to a file instead of printing?
+
+
+
+You said:
+is this the better or the previous one?
+
+ChatGPT said:
+Great question — it depends on what you're optimizing for. Let me break it down clearly:
+
+🧮 Which Version is "Better"?
+Criteria	Simplified Version	Original/Expanded Version
+✅ Ease of Use	✅ Easiest to read and use	❌ Slightly more complex
+⚙️ Flexibility	⚠️ Basic (harder to reuse in other apps)	✅ Modular and more reusable
+🔄 Separation of concerns	❌ Mixed printing + logic	✅ Separated logic from output
+🧪 Testability	❌ Hard to unit test	✅ Easy to test functions individually
+📦 Reusability	❌ Tied to console output	✅ Can be used in other scripts/apps
+🧰 Maintainability	✅ Simple, small	✅ Slightly more code, but better structure
+💻 CLI / API ready	⚠️ Minimal	✅ More extensible
+
+🧠 When to Use Which?
+Use the Simplified Version if:
+You just want a quick and clean script to check the weather.
+
+You're okay with limited flexibility.
+
+You don't plan to reuse the logic in another application.
+
+Use the Expanded Version if:
+You want to reuse the weather logic in other code (like a web app or automation).
+
+You care about clean architecture, testing, and maintainability.
+
+You want to eventually add features like saving to a file, supporting more locations, or handling different APIs.
+
+🎯 Bottom Line
+If you're just scripting for yourself → go with the simplified version.
+If you're building a tool or app → the expanded version is better.
+
+Would you like me to give you a version that balances both: simple, but also reusable?
+
+
+
+You said:
+will the temperature will be real time ?/
+
+ChatGPT said:
+Great question — here's the clear answer:
+
+🌡️ Is the Temperature Real-Time?
+No, not exactly real-time.
+The data you get from the WeatherAPI forecast endpoint (which you're using) is:
+
+📅 Forecasted (predicted) temperature for future days.
+
+📌 For the current day, it's the forecasted average/max/min, not the live temperature at this moment.
+
+🕒 Want Real-Time (Live) Temperature?
+Yes, you can get it — but you need to use the current.json endpoint from WeatherAPI instead of the forecast.json.
+
+✅ Example: Real-Time Weather in Perth
+python
+Copy
+Edit
+import requests
+
+def get_real_time_weather(city="Perth"):
+    url = "http://api.weatherapi.com/v1/current.json"
+    params = {
+        "key": "e518a1d26d504abbb7650159251905",
+        "q": city,
+        "aqi": "no"
+    }
+
+    try:
+        r = requests.get(url, params=params, timeout=10)
+        r.raise_for_status()
+        data = r.json()
+
+        location = f"{data['location']['name']}, {data['location']['country']}"
+        temp_c = data["current"]["temp_c"]
+        condition = data["current"]["condition"]["text"]
+        last_updated = data["current"]["last_updated"]
+
+        print(f"Real-Time Weather in {location}")
+        print("-" * 40)
+        print(f"Temperature: {temp_c}°C")
+        print(f"Condition: {condition}")
+        print(f"Last Updated: {last_updated}")
+
+    except requests.RequestException as e:
+        print("Error fetching real-time weather:", e)
+
+# Example usage
+get_real_time_weather("Perth")
+⚡ Summary
+Data Type	Endpoint	Real-Time?
+Forecast (future)	forecast.json	❌
+Current conditions	current.json	✅
+
+Would you like a version that combines both current + forecast data in one output?
+
+
+
